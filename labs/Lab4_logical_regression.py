@@ -37,31 +37,31 @@ if __name__ == "__main__":
     """
         3. Выделить качественные признаки, провести их кодирование. 
         Для этого можно воспользоваться фунцией get_dummies() библиотеки pandas
+        https://www.codecamp.ru/blog/pandas-get-dummies/
     """
-    categorical_features = ['sex', 'cp', 'fbs', 'restecg', 'exang', 'slope', 'ca', 'thal']
-    encoded_data = pd.get_dummies(data, columns=categorical_features)
+    categorical_features = ['sex', 'cp', 'fbs', 'restecg', 'exang', 'slope', 'ca', 'thal'] # выбор столбцов с качественными значениями
+    encoded_data = pd.get_dummies(data, columns=categorical_features) # перевод качетсвенных в фиктивные
     print(encoded_data.head(), "\n")
     
     """
         4. Провести нормирование всех количественных признаков. 
         В данном случае, чтобы не изменились значения кодированных качественных признаков 
         можно использовать класс MinMaxScaler()
+        https://www.dmitrymakarov.ru/data-analysis/transform-08/#16-minmaxscaler
     """
     print("Нормализация: ")
     scaler = MinMaxScaler()
-    quantitative_features = [col for col in encoded_data.columns if col not in categorical_features]
-    encoded_data[quantitative_features] = scaler.fit_transform(encoded_data[quantitative_features])
+    quantitative_features = [col for col in encoded_data.columns if col not in categorical_features] # выбор численных столбцов
+    encoded_data[quantitative_features] = scaler.fit_transform(encoded_data[quantitative_features]) # нормализация
     print(encoded_data.head(), "\n")
 
     """
         5. Разделить выборку на обучающую и тестовую, используя функцию train_test_split().
         Параметр рандомизации задать random_state = 13 для возможности сравнения результатов.
+        https://pythonru.com/baza-znanij/sklearn-train-test-split
     """
     print("Разделение выборок:")
-    x_train, x_test, y_train, y_test = train_test_split(encoded_data.drop('target', axis=1),
-                                                        encoded_data['target'],
-                                                        test_size=0.3, 
-                                                        random_state = 13)
+    x_train, x_test, y_train, y_test = train_test_split(encoded_data.drop('target', axis=1),encoded_data['target'],test_size=0.3, random_state = 13)
     print("Тренировочная:") 
     print_count(y_train) 
     print("Тестовая:")
@@ -76,6 +76,7 @@ if __name__ == "__main__":
     
     7. Рассчитать точность классификации,
     в качестве метрики использовать долю верных ответов модели с реальными заначениями.
+    (тк классы рапределены равномерно использовать  accuracy корректно)
     """
     print("Логическая регрессия:")
     logic_classifier = LogisticRegression(penalty=None)
@@ -97,11 +98,13 @@ if __name__ == "__main__":
         выбрать оптимальное значение гиперпараметра.
         Обучить модель при этом значении и рассчитать точность. 
         Для обучения также использовать классы LogisticRegression или SGDClassifier
+        https://translated.turbopages.org/proxy_u/en-ru.ru.310bec98-667958d6-c15a998e-74722d776562/https/www.tutorialspoint.com/scikit_learn/scikit_learn_logistic_regression.htm
+        https://translated.turbopages.org/proxy_u/en-ru.ru.3f6f950f-66795903-8099e9f5-74722d776562/https/www.tutorialspoint.com/scikit_learn/scikit_learn_stochastic_gradient_descent.htm
     """
     lamb = [0.00001, 0.0001, 0.001, 0.01, 0.1, 1.0, 10, 100, 1000, 10000]
     
     print("Логическая регрессия:")
-    acc_2 = np.zeros(len(lamb))
+    acc_2 = np.zeros(len(lamb)) # массив результатов
     for i, C in enumerate(lamb):
         logic_classifier = LogisticRegression(C=C)
         logic_classifier.fit(x_train, y_train)
@@ -143,7 +146,7 @@ if __name__ == "__main__":
     disp.plot(cmap='Blues')
     plt.xlabel('Predicted')
     plt.ylabel('Actual')
-    plt.title('Confusion Matrix')
+    plt.title('Best logic class Confusion Matrix')
     plt.show()
     
     
@@ -161,19 +164,20 @@ if __name__ == "__main__":
     """
         10. Обучить модель, используя процедуру кросс-валидации с помощью класса LogisticRegressionCV. 
         Оценить точность модели.
+        https://education.yandex.ru/handbook/ml/article/kross-validaciya
     """
     classifier_cv = LogisticRegressionCV(Cs=lamb, cv=5, random_state=13)
     classifier_cv.fit(x_train, y_train)
     y_pred_cv = classifier_cv.predict(x_test)
     accuracy_cv = accuracy_score(y_test, y_pred_cv)
-    print(f"Точность LogisticRegressionCV: {accuracy_cv:.3f} параметр {classifier_cv.C_}")
+    print(f"\nТочность LogisticRegressionCV: {accuracy_cv:.3f} параметр {classifier_cv.C_}")
     
     """
         11. Для оценки точности построить ROC-кривую. 
         Для этого рассчитать предсказанные вероятности по последней модели.
         Рассчитать значения оценок FPR и TPR с помощью функции roc_curve().
     """
-    y_prob = classifier_cv.predict_proba(x_test)[:, 1]
+    y_prob = classifier_cv.predict_proba(x_test)[:, 1] # вероятность принадлежности
     fpr, tpr, thresholds = roc_curve(y_test, y_prob)
     plt.figure(figsize=(8, 6))
     plt.plot(fpr, tpr, color='blue', lw=2, label='ROC curve')
